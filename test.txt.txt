@@ -1,0 +1,62 @@
+LIBRARY IEEE;
+USE IEEE.STD_LOGIC_1164.ALL;
+
+entity TLC_test is
+end entity;
+
+architecture tb of TLC_test is
+  signal 
+north_tl,
+east_tl,
+north_left,
+east_left,
+north_ped,
+east_ped: STD_LOGIC_Vector (2 downto 0);
+  
+  signal 
+--button_n, button_e, 
+emergency, clk, reset : STD_LOGIC;
+
+begin
+DUT : ENTITY work.traffic
+PORT MAP(
+north_tl=>north_tl,
+east_tl=>east_tl,
+north_left=>north_left,
+east_left=>east_left,
+north_ped=>north_ped,
+east_ped=> east_ped,
+
+--button_n=> button_n, 
+--button_e=> button_e,
+emergency=> emergency,
+clk=>clk, reset=>reset
+  );
+  
+  
+Clock : process
+begin
+clk <= '0';
+wait for 10 ns;
+clk <= '1';
+wait for 10 ns;
+end process;
+
+
+stimulis : process
+begin
+report("Starting simulation");
+
+reset <= '1';wait for 10 ns; --reset to st0
+-- one normal cycle = (100ns+160ns+20ns)*2*2 = 1120 ns (not accurate, only an estimate)
+emergency<= '0'; reset<='0';wait for 1220 ns; -- a little more than one normal cycle
+emergency<= '1'; reset<='0';wait for 100 ns;
+emergency<= '0'; reset<='1';wait for 100 ns;
+emergency<= '1'; reset<='1';wait for 100 ns;
+-- make sure to simulate for at least 1520 ns!!
+
+--emergency <= '0'; reset <= '0'; button_n <= '1'; wait for 200 ns; -- st0 shorter or st1 longer
+
+report("End simulation");
+end process;
+end architecture;

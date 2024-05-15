@@ -1,0 +1,179 @@
+--CODE
+LIBRARY IEEE;
+USE  IEEE.STD_LOGIC_1164.all;
+USE  IEEE.STD_LOGIC_ARITH.all;      -- needed for arithmetic increment
+USE  IEEE.STD_LOGIC_UNSIGNED.all;
+use ieee.numeric_std.all;
+
+entity traffic is  
+Port (
+north_tl:out STD_LOGIC_Vector (2 downto 0); -- right turn and through passing traffic lights
+east_tl:out STD_LOGIC_Vector (2 downto 0); 
+
+north_left:out STD_LOGIC_Vector (2 downto 0); -- left turn traffic lights
+east_left:out STD_LOGIC_Vector (2 downto 0); 
+
+north_ped:out STD_LOGIC_Vector (2 downto 0); -- pedestrian light
+east_ped:out STD_LOGIC_Vector (2 downto 0);
+
+emergency: in STD_LOGIC;
+--button_n: in STD_LOGIC;
+--button_e: in STD_LOGIC;
+clk : in STD_LOGIC;
+reset : in STD_LOGIC
+);
+
+end traffic;
+
+architecture Behavioral of traffic is
+type state_type is (st0, st1, st2, st3, st4, st5, stx); -- stx is when natural disasters occur so all lights are red except pedestrians
+signal state: state_type:= st0;
+signal count : std_logic_vector (3 downto 0);
+constant sec10 : std_logic_vector ( 3 downto 0) := "1010";
+constant sec2 : std_logic_vector (3 downto 0 ) := "0010";
+constant sec16: std_logic_vector (3 downto 0 ) := "1111";
+
+begin  
+process (clk, reset, emergency)
+    begin
+      if emergency = '1' then --emergency sensor
+      state <= stx;
+      count <= X"0";
+      elsif reset='1' then
+      state <= st0; --reset to initial state
+      count <= X"0"; -- reset counter
+
+  elsif rising_edge(clk) then
+    
+      case (state) is
+      when st0 =>
+        --if button_n = '1' then count <= count +2; end if;
+        if count < sec10 then 
+          count <= count + 1; 
+          state <= st0;    
+        else
+          state <= st1;
+          count <= X"0"; 
+        end if;
+      when st1 =>
+        --if button_n = '1' then count <= count - 2; end if;
+        
+if count < sec16 then
+          count <= count + 1;
+          state <= st1;
+        else
+          state <= st2;
+          count <= X"0";
+      end if;
+      when st2 =>
+        if count < sec2 then
+         state <= st2;
+         count <= count + 1;
+        else
+          state <= st3;
+          count <= X"0";
+        end if;
+      when st3 =>
+        --if button_e = '1' then count <= count + 2; end if;
+        if count < sec10 then
+          count <= count + 1;
+          
+state <= st3;
+        else
+          state <= st4;
+          count <= X"0";
+        end if; 
+      when st4 =>   
+        --if button_n = '1' then count <= count +2; end if;     
+        if (count < sec16) then
+          state <= st4;
+          count <= count + 1;          
+        else
+          state <= st5;
+          count <= X"0";
+        end if;
+      when st5 =>
+        if count < sec2 then
+         state <= st5;
+         count <= count + 1;
+        else
+          state <= st0;
+          count <= X"0";
+        end if;
+      when others =>
+          state <= stx;     
+      end case;
+        
+end if;
+end process;
+     
+     
+OUTPUT_DECODE: process (state)
+begin
+case (state) is
+
+-- R->G->Y
+ --RYG 
+when st0 => north_tl <= "100";
+north_left <= "001";
+east_tl <= "100";
+east_left <= "100";
+north_ped <= "100";
+east_ped <= "100";
+
+when st1 => north_tl <= "001";
+north_left <= "010";
+east_tl <= "100";
+east_left <= "100";
+north_ped <= "100";
+east_ped <= "001";
+
+when st2 => 
+north_tl <= "010";
+north_left <= "100";
+east_tl <= "100";
+east_left <= "100";
+north_ped <= "100";
+east_ped <= "100";
+
+when st3 => 
+north_tl <= "100";
+north_left <= "100";
+east_tl <= "100";
+east_left <= "001";
+north_ped <= "100";
+east_ped <= "100";
+
+when st4 => north_tl <= "100";
+north_left <= "100";
+east_tl <= "001";
+east_left <= "010";
+north_ped <= "001";
+east_ped <= "100";
+
+when st5 => north_tl <= "100";
+north_left <= "100";
+east_tl <= "010";
+east_left<= "100";
+north_ped <= "100";
+east_ped <= "100";
+
+when stx => north_tl <= "100";
+north_left <= "100";
+east_tl <= "100";
+east_left <= "100";
+north_ped <= "001";
+east_ped <= "001";
+
+when others => north_tl <= "100";
+north_left <= "100";
+east_tl <= "100";
+east_left <= "100";
+north_ped <= "100";
+east_ped<= "100";
+
+
+end case;
+end process;
+end Behavioral;
+
